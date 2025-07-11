@@ -40,8 +40,8 @@ const DEPRECATED_CACHES = ['precache-v1', 'runtime', 'main-precache-v1', 'main-r
 
 // The Util Function to hack URLs of intercepted requests
 const getCacheBustingUrl = (req) => {
-  var now = Date.now();
-  url = new URL(req.url)
+  const now = Date.now();
+  const url = new URL(req.url)
 
   // 1. fixed http URL
   // Just keep syncing with location.protocol
@@ -85,7 +85,7 @@ const shouldRedirect = (req) => (isNavigationReq(req) && new URL(req.url).pathna
 // `${url}/` would mis-add "/" in the end of query, so we use URL object.
 // P.P.S. Always trust url.pathname instead of the whole url string.
 const getRedirectUrl = (req) => {
-  url = new URL(req.url)
+  const url = new URL(req.url)
   url.pathname += "/"
   return url.href
 }
@@ -103,7 +103,7 @@ self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE).then(cache => {
       return cache.addAll(PRECACHE_LIST)
-        .then(self.skipWaiting())
+        .then(() => self.skipWaiting())
         .catch(err => console.log(err))
     })
   )
@@ -117,18 +117,19 @@ self.addEventListener('install', e => {
  *  waitUntil(): activating ====> activated
  */
 self.addEventListener('activate', event => {
-  // delete old deprecated caches.
-  caches.keys().then(cacheNames => Promise.all(
-    cacheNames
-      .filter(cacheName => DEPRECATED_CACHES.includes(cacheName))
-      .map(cacheName => caches.delete(cacheName))
-  ))
+  // delete old deprecated caches and claim clients when done.
   console.log('service worker activated.')
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then(cacheNames => Promise.all(
+      cacheNames
+        .filter(cacheName => DEPRECATED_CACHES.includes(cacheName))
+        .map(cacheName => caches.delete(cacheName))
+    )).then(() => self.clients.claim())
+  );
 });
 
 
-var fetchHelper = {
+const fetchHelper = {
 
   fetchThenCache: function(request){
     // Requests with mode "no-cors" can result in Opaque Response,
